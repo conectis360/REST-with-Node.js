@@ -5,10 +5,20 @@ const Product = require('../models/product');
 
 //get pega todos gets, apartir daquela URL (1° argumento)
 //2e arg é um handler
+
 router.get('/', (req, res, next) => {
-    res.status(200).json({
-        message: 'Handling GET request to /products'
-    })
+    Product.find()
+        .exec()
+        .then(docs => {
+            console.log(docs);
+            if(docs.length >= 0){
+                res.status(200).json(docs);
+            }else {
+                res.status(404).json({
+                    message: "No Products found."
+                });
+            }
+        })
 });
 
 router.post('/', (req, res, next) => {
@@ -44,16 +54,41 @@ router.get('/:productId', (req, res, next) => {
 });
 
 router.patch('/:productId', (req, res, next) => {
-    res.status(200).json({
-        message: "Updated data!"
+    const id = req.params.productId;
+    const updateOperation = {};
+    for (const ops of req.body) {
+        updateOperation[ops.propName] = ops.value;
+    }
+    Product.update({_id: id}, {$set: updateOperation})
+    .exec()
+    .then(res => {
+        console.log(result);
+        res.status(200).json(result)
     })
+    .catch(err => {
+        console.log(err);
+        res.status(500).json({
+            error: err
+        })
+    });
 });
 
 router.delete('/:productId', (req, res, next) => {
-    res.status(200).json({
-        message: "Deleted! data!"
-    })
-});
+    const id = req.params.productId;
+    Product.remove({
+        _id: id
+    }).exec()
+      .then(result => {
+          res.status(200).json(result);
+      })
+      .catch(err => {
+          console.log(err);
+          res.status(500).json({
+              error: err
+          })
+      })
+
+    });
 
 //exporta a 'module' para ser usadas em outras files.
 module.exports = router;
