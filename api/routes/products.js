@@ -8,16 +8,24 @@ const Product = require('../models/product');
 
 router.get('/', (req, res, next) => {
     Product.find()
+        .select('name price _id')
         .exec()
         .then(docs => {
-            console.log(docs);
-            if(docs.length >= 0){
-                res.status(200).json(docs);
-            }else {
-                res.status(404).json({
-                    message: "No Products found."
-                });
-            }
+            const response = {
+                count: docs.length,
+                products: docs.map(doc => {
+                    return {
+                        name: doc.name,
+                        price: doc.price,
+                        _id: doc._id,
+                        request: {
+                            type: "GET",
+                            url: `http://localhost:3000/products/${doc._id}`
+                        }
+                    }
+                })
+            };
+            res.status(200).json(response);
         })
 });
 
@@ -29,12 +37,25 @@ router.post('/', (req, res, next) => {
     });
     product.save().then(result => {
         console.log(result);
+        res.status(201).json({
+            createdProduct: {
+                name: product.name,
+                price: product.price,
+                _id: product._id,
+                request: {
+                        type: "GET",
+                        url: `http://localhost:3000/products/${product._id}`
+                    }
+                }
+        })
     })
-    .catch(err => console.log(err));
-    res.status(200).json({
-        message: 'Handling POST request to /products',
-        createdProduct: product
-    })
+    .catch(err => {
+        res.status(401).json({
+            message: err
+        })
+    });
+
+
 });
 
 router.get('/:productId', (req, res, next) => {
